@@ -45,7 +45,7 @@ EXTRA_DEFINES   = -DSYSV      /* Solves wait() problems on DEC OSF/1. */
 #endif 
 
 SRCS            = src/diy.c src/options.c src/message.c src/state.c \
-                  src/engine.c src/xautolock.c
+                  src/engine.c src/xautolock.c src/trayicon.c
 OBJS            = $(SRCS:.c=.o)
 INCLUDES        = -Iinclude
 

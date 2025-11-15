@@ -22,6 +22,7 @@
 #include "options.h"
 #include "state.h"
 #include "miscutil.h"
+#include "trayicon.h"
 
 /*
  *  Function for querying the idle time from the server.
@@ -32,9 +33,12 @@ void
 queryIdleTime (Display* d, Bool use_xidle)
 {
   int dummy;
+  Time idleTime = 0; /* millisecs since last input event */
+#ifdef HasScreenSaver
   CARD16 standby, suspend, off;
   CARD16 state;
-  BOOL onoff;  Time idleTime = 0; /* millisecs since last input event */
+  BOOL onoff;
+#endif /* HasScreenSaver */
 
 #ifdef HasXidle
   if (use_xidle)
@@ -52,6 +56,7 @@ queryIdleTime (Display* d, Bool use_xidle)
 #endif /* HasScreenSaver */
   }
 
+#ifdef HasScreenSaver
   if (DPMSQueryExtension(d, &dummy, &dummy)) {
     if (DPMSCapable(d)) {
       DPMSGetTimeouts(d, &standby, &suspend, &off);
@@ -78,6 +83,7 @@ queryIdleTime (Display* d, Bool use_xidle)
       }
     } 
   }
+#endif /* HasScreenSaver */
 
   if (idleTime < 1000)  
   {
@@ -182,14 +188,54 @@ queryPointer (Display* d)
           {
             setLockTrigger (newTrigger - now);
           }
+         /*
+          *  Not in a nolock corner.
+          */
+          if (inNoLockCorner)
+          {
+            inNoLockCorner = False;
+            hideTrayIcon (d);
+          }
           break;
 
         case ca_dontLock:
           resetTriggers ();
+         /*
+          *  In a nolock corner - show tray icon.
+          */
+          if (!inNoLockCorner)
+          {
+            inNoLockCorner = True;
+            showTrayIcon (d);
+          }
+          break;
+
+        case ca_ignore:
+         /*
+          *  Not in a nolock corner.
+          */
+          if (inNoLockCorner)
+          {
+            inNoLockCorner = False;
+            hideTrayIcon (d);
+          }
+          break;
 
 #ifdef __GNUC__
 	default: break; /* Makes gcc -Wall shut up. */
 #endif /* __GNUC__ */
+      }
+    }
+    else
+    {
+     /*
+      *  Pointer is stationary but not in any corner.
+      *  Hide icon if it was visible.
+      */
+      if (inNoLockCorner)
+      {
+        inNoLockCorner = False;
+        hideTrayIcon (d);
       }
     }
   }
@@ -201,6 +247,14 @@ queryPointer (Display* d)
     prevMask = mask;
 
     resetTriggers ();
+   /*
+    *  Pointer moved - hide icon if it was visible.
+    */
+    if (inNoLockCorner)
+    {
+      inNoLockCorner = False;
+      hideTrayIcon (d);
+    }
   }
 }
 

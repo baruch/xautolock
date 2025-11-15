@@ -29,6 +29,7 @@ extern unsigned    nofArgs;
 extern Bool        disabled;
 extern Bool        lockNow;
 extern Bool        unlockNow;
+extern Bool        inNoLockCorner;
 extern time_t      lockTrigger;
 extern time_t      killTrigger;
 extern pid_t       lockerPid;

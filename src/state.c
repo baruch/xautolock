@@ -28,6 +28,7 @@ unsigned    nofArgs     = 0;     /* number of command line arguments   */
 Bool        disabled    = False; /* whether to ignore all timeouts     */
 Bool        lockNow     = False; /* whether to lock immediately        */
 Bool        unlockNow   = False; /* whether to unlock immediately      */
+Bool        inNoLockCorner = False; /* whether mouse is in nolock corner */
 time_t      lockTrigger = 0;     /* time at which to invoke the locker */
 time_t      killTrigger = 0;     /* time at which to invoke the killer */
 pid_t       lockerPid   = 0;     /* process id of the current locker   */

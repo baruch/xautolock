@@ -26,6 +26,7 @@
 #include "diy.h"
 #include "message.h"
 #include "engine.h"
+#include "trayicon.h"
 
 /*
  *  X error handler. We can safely ignore everything
@@ -116,6 +117,7 @@ main (int argc, char* argv[])
   initState (argc, argv);
   processOpts (d, argc, argv);
   wmSetup (d);
+  initTrayIcon (d);
   checkConnectionAndSendMessage (d);
   resetTriggers ();
 
