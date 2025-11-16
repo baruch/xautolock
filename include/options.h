@@ -40,6 +40,7 @@ typedef enum
   msg_lockNow,   /* tell running xautolock to lock now   */
   msg_unlockNow, /* tell running xautolock to unlock now */
   msg_restart,   /* tell running xautolock to restart    */
+  msg_query,     /* query status of running xautolock    */
 } message;
 
 /*

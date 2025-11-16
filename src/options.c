@@ -219,6 +219,7 @@ MESSAGE_ACTION (exit     )
 MESSAGE_ACTION (lockNow  )
 MESSAGE_ACTION (unlockNow)
 MESSAGE_ACTION (restart  )
+MESSAGE_ACTION (query    )
 
 #define BOOL_ACTION(name)                  \
 static Bool                                \
@@ -529,6 +530,8 @@ static struct
     disableAction      , (optChecker) 0            },
   {"toggle"            , XrmoptionNoArg , (caddr_t) "",
     toggleAction       , (optChecker) 0            },
+  {"query"             , XrmoptionNoArg , (caddr_t) "",
+    queryAction        , (optChecker) 0            },
   {"exit"              , XrmoptionNoArg , (caddr_t) "",
     exitAction         , (optChecker) 0            },
   {"locknow"           , XrmoptionNoArg , (caddr_t) "",
@@ -578,7 +581,7 @@ usage (int exitCode)
   error1 ("%s[-corners xxxx][-cornerdelay secs]\n", blanks);
   error1 ("%s[-cornerredelay secs][-cornersize pixels]\n", blanks);
   error1 ("%s[-nocloseout][-nocloseerr][-noclose]\n", blanks);
-  error1 ("%s[-enable][-disable][-toggle][-exit][-secure]\n", blanks);
+  error1 ("%s[-enable][-disable][-toggle][-query][-exit][-secure]\n", blanks);
   error1 ("%s[-locknow][-unlocknow][-nowlocker locker]\n", blanks);
   error1 ("%s[-restart][-resetsaver][-detectsleep][-lockaftersleep]\n", blanks);
 

@@ -27,9 +27,11 @@ static Atom semaphore;   /* semaphore property for locating
                             an already running xautolock    */
 static Atom messageAtom; /* message property for talking to
                             an already running xautolock    */
+static Atom responseAtom; /* response property for queries   */
 
 #define SEM_PID "_SEMAPHORE_PID"  
 #define MESSAGE "_MESSAGE"       
+#define RESPONSE "_RESPONSE"
 
 /*
  *  Message handlers.
@@ -106,6 +108,32 @@ restartByMessage (Display* d, Window root)
     XFlush (d);
     execv (argArray[0], argArray);
   }
+}
+
+static void
+queryByMessage (Display* d, Window root)
+{
+  int response;
+
+ /*
+  *  Build response value:
+  *  Bit 0: disabled flag
+  *  Bit 1: locked flag (lockerPid != 0)
+  *  Bit 2: in nolock corner
+  */
+  response = 0;
+  if (disabled) response |= 1;
+  if (lockerPid != 0) response |= 2;
+  if (inNoLockCorner) response |= 4;
+
+ /*
+  *  Write response to the response property.
+  */
+  (void) XChangeProperty (d, root, responseAtom, XA_INTEGER,
+                          8, PropModeReplace,
+			  (unsigned char*) &response,
+			  (int) sizeof (response));
+  XFlush (d);
 }
 
 /*
@@ -186,6 +214,10 @@ lookForMessages (Display* d)
        restartByMessage (d, root);
        break;
 
+      case msg_query:
+       queryByMessage (d, root);
+       break;
+
       case msg_exit:
        exitByMessage (d, root);
        break;
@@ -207,6 +239,7 @@ getAtoms (Display* d)
 {
   char* sem; /* semaphore property name */
   char* mes; /* message property name   */
+  char* res; /* response property name  */
   char* ptr; /* iterator                */
 
   sem = newArray (char, strlen (progName) + strlen (SEM_PID) + 1);
@@ -220,6 +253,12 @@ getAtoms (Display* d)
   for (ptr = mes; *ptr; ++ptr) *ptr = (char) toupper (*ptr);
   messageAtom = XInternAtom (d, mes, False);
   free (mes);
+
+  res = newArray (char, strlen (progName) + strlen (RESPONSE) + 1);
+  (void) sprintf (res, "%s%s", progName, RESPONSE);
+  for (ptr = res; *ptr; ++ptr) *ptr = (char) toupper (*ptr);
+  responseAtom = XInternAtom (d, res, False);
+  free (res);
 }
 
 /*
@@ -263,6 +302,50 @@ checkConnectionAndSendMessage (Display* d)
     }
     else if (messageToSend)
     {
+     /*
+      *  Special handling for query: we need to wait for response.
+      */
+      if (messageToSend == msg_query)
+      {
+        int* response;
+        int timeout = 20; /* 2 seconds */
+
+        (void) XChangeProperty (d, root, messageAtom, XA_INTEGER,
+                                8, PropModeReplace,
+			        (unsigned char*) &messageToSend,
+			        (int) sizeof (messageToSend));
+        XFlush (d);
+
+       /*
+        *  Wait for response property to appear.
+        */
+        while (timeout-- > 0)
+        {
+          usleep (100000); /* 0.1 seconds */
+
+          (void) XGetWindowProperty (d, root, responseAtom, 0L, 2L,
+                                     True, AnyPropertyType, &type, &format,
+			             &nofItems, &after,
+			             (unsigned char**) &response);
+
+          if (type == XA_INTEGER && response != NULL)
+          {
+            int state = *response;
+
+            printf ("xautolock status:\n");
+            printf ("  Enabled:   %s\n", (state & 1) ? "No (disabled)" : "Yes");
+            printf ("  Locked:    %s\n", (state & 2) ? "Yes" : "No");
+            printf ("  In corner: %s\n", (state & 4) ? "Yes (nolock)" : "No");
+
+            (void) XFree ((char*) response);
+            exit (EXIT_SUCCESS);
+          }
+        }
+
+        error0 ("Timeout waiting for query response.\n");
+        exit (EXIT_FAILURE);
+      }
+
       (void) XChangeProperty (d, root, messageAtom, XA_INTEGER, 
                               8, PropModeReplace, 
 			      (unsigned char*) &messageToSend, 
